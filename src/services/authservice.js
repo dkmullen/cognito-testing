@@ -7,6 +7,7 @@ import {
   CognitoUserPool,
   CognitoUserAttribute,
   CognitoUser,
+  AuthenticationDetails,
 } from 'amazon-cognito-identity-js';
 
 const poolData = {
@@ -17,6 +18,7 @@ const poolData = {
 let cognitoUser;
 const userPool = new CognitoUserPool(poolData);
 
+//////
 function signUp({ username, email, password }) {
   const attributeList = [];
 
@@ -44,6 +46,8 @@ function signUp({ username, email, password }) {
     }
   );
 }
+
+//////
 function confirm(username, number) {
   var userData = {
     Username: username,
@@ -57,6 +61,50 @@ function confirm(username, number) {
       return;
     }
     console.log('call result: ' + result);
+    eventBus.$emit('confirmSuccess');
   });
 }
-export { signUp, confirm };
+
+//////
+function signIn({ username, password }) {
+  const authenticationData = {
+    Username: username,
+    Password: password,
+  };
+  const authenticationDetails = new AuthenticationDetails(authenticationData);
+  const userPool = new CognitoUserPool(poolData);
+  const userData = {
+    Username: username,
+    Pool: userPool,
+  };
+  const cognitoUser = new CognitoUser(userData);
+
+  cognitoUser.authenticateUser(authenticationDetails, {
+    onSuccess: function (result) {
+      const accessToken = result.getAccessToken().getJwtToken();
+      console.log(cognitoUser.username);
+      eventBus.$emit('signedIn', {
+        username: cognitoUser.username,
+        token: accessToken,
+      });
+    },
+
+    onFailure: function (err) {
+      alert(err.message || JSON.stringify(err));
+    },
+  });
+}
+
+async function signOut() {
+  const user = await getAuthenticatedUser();
+  if (user) {
+    user.signOut();
+    return 'SUCCESS';
+  }
+}
+
+async function getAuthenticatedUser() {
+  return userPool.getCurrentUser();
+}
+
+export { signUp, confirm, signIn, signOut, getAuthenticatedUser };
