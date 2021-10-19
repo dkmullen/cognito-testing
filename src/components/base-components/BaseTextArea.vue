@@ -9,7 +9,7 @@
       :rows="rows"
       v-on="listeners"
       :maxlength="maxlen"
-      counter
+      :counter="counter"
       :id="id"
     ></v-textarea>
   </v-container>
@@ -33,6 +33,7 @@ export default {
     rows: { type: String, default: '4' },
     maxlen: { type: Number },
     id: { type: String, default: '' },
+    counter: { type: Boolean, default: true },
   },
 };
 </script>

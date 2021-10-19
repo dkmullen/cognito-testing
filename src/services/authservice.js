@@ -88,9 +88,22 @@ function signIn({ username, password }) {
         token: accessToken,
       });
     },
-
     onFailure: function (err) {
       alert(err.message || JSON.stringify(err));
+    },
+    mfaSetup: function (challengeName, challengeParameters) {
+      cognitoUser.associateSoftwareToken(this);
+    },
+    associateSecretCode: function (secretCode) {
+      console.log(secretCode);
+      var challengeAnswer = prompt('Please input the TOTP code.', '');
+      cognitoUser.verifySoftwareToken(challengeAnswer, 'My TOTP device', this);
+    },
+    totpRequired: function (secretCode) {
+      console.log(secretCode);
+
+      var challengeAnswer = prompt('Please input the TOTP code.', '');
+      cognitoUser.sendMFACode(challengeAnswer, this, 'SOFTWARE_TOKEN_MFA');
     },
   });
 }

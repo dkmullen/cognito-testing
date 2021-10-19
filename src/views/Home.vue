@@ -4,7 +4,7 @@
       Signed in as {{ currentUser }}
       <span class="pseudo-link" @click="signOut">Sign out</span>
     </div>
-    <v-form v-model="valid" class="form" v-if="forms.signUpForm">
+    <v-form v-model="signUpIsValid" class="form" v-if="forms.signUpForm">
       <h2 class="center">Sign up</h2>
       <v-container>
         <BaseInput
@@ -16,11 +16,18 @@
           :type="row.type ? row.type : ''"
           :maxlen="row.maxlength"
           :id="row.id"
+          :counter="false"
         />
         <div class="center">
-          <v-btn color="primary" @click="signUp">Sign up</v-btn>
+          <v-btn
+            color="primary"
+            @click="signUp"
+            :disabled="!signUpIsValid"
+            :loading="submitting"
+            >Sign up</v-btn
+          >
           <div class="pseudo-link" @click="switchForms('signInForm')">
-            Sign in
+            Or sign in
           </div>
         </div>
       </v-container>
@@ -39,7 +46,7 @@
         </div>
       </v-container>
     </v-form>
-    <v-form class="form" v-if="forms.signInForm">
+    <v-form class="form" v-if="forms.signInForm" v-model="signInIsValid">
       <h2 class="center">Sign in</h2>
       <v-container>
         <BaseInput
@@ -47,6 +54,7 @@
           required
           label="User Name"
           id="username"
+          :counter="false"
         />
         <BaseInput
           v-model="user.password"
@@ -54,32 +62,52 @@
           label="Password"
           id="password"
           type="password"
+          :counter="false"
         />
         <div class="center">
-          <v-btn color="primary" @click="signIn">Sign in</v-btn>
+          <v-btn color="primary" @click="signIn" :disabled="!signInIsValid"
+            >Sign in</v-btn
+          >
 
           <div class="pseudo-link" @click="switchForms('signUpForm')">
-            Sign up
+            Or sign up
           </div>
         </div>
       </v-container>
     </v-form>
-    <v-form class="form" v-if="forms.postForm">
+    <v-form class="form" v-if="forms.postForm" v-model="valid" ref="postForm">
       <h2 class="center">Post</h2>
       <v-container>
-        <BaseInput v-model="post.quote" required label="Quote" id="quote" />
+        <BaseTextArea
+          v-model="post.quote"
+          required
+          label="Quote"
+          id="quote"
+          :counter="false"
+          :disabled="submitting"
+        />
         <BaseInput
           v-model="post.source"
           required
           label="Source"
           id="source"
           type="source"
+          :disabled="submitting"
+          :counter="false"
         />
         <div class="center">
-          <v-btn color="primary" @click="doPost">Post</v-btn>
+          <v-btn
+            color="primary"
+            @click="doPost"
+            :loading="submitting"
+            :disabled="!valid"
+            >Post</v-btn
+          >
         </div>
       </v-container>
     </v-form>
+    <div v-if="message" class="message center">{{ message }}</div>
+    <div v-if="error" class="error center">{{ error }}</div>
   </v-container>
 </template>
 
@@ -93,7 +121,13 @@ export default {
     this.checkForAuthenticatedUser();
   },
   data: () => ({
-    valid: false,
+    valid: true,
+    signInIsValid: false,
+    signUpIsValid: false,
+    postFormValid: false,
+    submitting: false,
+    message: '',
+    error: '',
     signedIn: false,
     currentUser: '',
     token: '',
@@ -180,32 +214,44 @@ export default {
       }
       this.forms[form] = true;
     },
-    doPost() {
+    async doPost() {
       let data = {
         source: this.post.source,
         quote: this.post.quote,
       };
-      console.log(data);
       auth.getAuthenticatedUser((err, user) => {
         if (err) {
           console.log(err);
         }
         console.log(user);
       });
-      axios.post(
-        'https://h5uwr12hmi.execute-api.us-east-2.amazonaws.com/dev',
-        data,
-        {
-          headers: new Headers({
-            Authorization: this.token,
-          }),
-        }
-      );
+      this.submitting = true;
+      let res = await axios
+        .post(
+          'https://h5uwr12hmi.execute-api.us-east-2.amazonaws.com/dev',
+          data,
+          {
+            headers: new Headers({
+              Authorization: this.token,
+            }),
+          }
+        )
+        .catch((err) => {
+          this.error = err;
+          this.submitting = false;
+        });
+      if (res) {
+        this.submitting = false;
+        this.$refs.postForm.reset();
+        this.message = 'Submitted';
+        setTimeout(() => {
+          this.message = '';
+        }, 4000);
+      }
     },
     async checkForAuthenticatedUser() {
       const res = await auth.getAuthenticatedUser();
       if (res) {
-        console.log(res);
         this.signedIn = true;
         this.currentUser = res.username;
         this.switchForms('postForm');
@@ -217,8 +263,10 @@ export default {
 
 <style lang="scss" scoped>
 .pseudo-link {
-  color: #0039b3;
+  color: #0c5b5b;
   cursor: pointer;
+  font-size: small;
+  margin-top: 10px;
 }
 .center {
   text-align: center;
@@ -230,5 +278,11 @@ export default {
   font-size: small;
   text-align: right;
   margin-bottom: 2rem;
+}
+.message {
+  color: green;
+}
+.error {
+  color: red;
 }
 </style>
