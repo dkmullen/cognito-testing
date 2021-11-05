@@ -81,7 +81,9 @@ function signIn({ username, password }) {
 
   cognitoUser.authenticateUser(authenticationDetails, {
     onSuccess: function (result) {
-      const accessToken = result.getAccessToken().getJwtToken();
+      console.log(result);
+      const accessToken = result.getIdToken().getJwtToken();
+      console.log(accessToken);
       eventBus.$emit('signedIn', {
         token: accessToken,
         cognitoUser,

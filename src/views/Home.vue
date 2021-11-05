@@ -72,6 +72,10 @@
           <div class="pseudo-link" @click="switchForms('signUpForm')">
             Or sign up
           </div>
+
+          <div class="pseudo-link" @click="googleIn" v-if="forms.signInForm">
+            Sign in with Google
+          </div>
         </div>
       </v-container>
     </v-form>
@@ -108,7 +112,6 @@
     </v-form>
     <div v-if="message" class="message center">{{ message }}</div>
     <div v-if="error" class="error center">{{ error }}</div>
-    <div>{{ authenticatedUser }}</div>
   </v-container>
 </template>
 
@@ -122,7 +125,7 @@ export default {
   mounted() {
     this.checkForAuthenticatedUser();
   },
-  computed: mapGetters(['authenticatedUser']),
+  computed: mapGetters(['authenticatedUser', 'idToken']),
   data: () => ({
     valid: true,
     signInIsValid: false,
@@ -177,7 +180,7 @@ export default {
     },
   }),
   methods: {
-    ...mapActions(['setAuthenticatedUser']),
+    ...mapActions(['setAuthenticatedUser', 'setIdToken']),
     signUp() {
       let user = {};
       for (let i in this.formData) {
@@ -203,6 +206,13 @@ export default {
         this.token = res.token;
         this.signedIn = true;
         this.setAuthenticatedUser(res.cognitoUser);
+        const id_token = new URLSearchParams(
+          window.location.hash.substr(1)
+        ).get('id_token');
+        if (id_token) {
+          console.log(id_token);
+          this.setIdToken(id_token);
+        }
         this.switchForms('postForm');
       });
     },
@@ -211,7 +221,7 @@ export default {
       if (res) {
         this.signedIn = false;
         this.currentUser = '';
-        this.setAuthenticatedUser = null;
+        this.setAuthenticatedUser(null);
         this.switchForms('signInForm');
       }
     },
@@ -238,9 +248,9 @@ export default {
           'https://h5uwr12hmi.execute-api.us-east-2.amazonaws.com/dev',
           data,
           {
-            headers: new Headers({
-              Authorization: this.token,
-            }),
+            headers: {
+              Authorization: this.idToken,
+            },
           }
         )
         .catch((err) => {
@@ -263,6 +273,11 @@ export default {
         this.currentUser = res.username;
         this.switchForms('postForm');
       }
+    },
+    googleIn() {
+      window.location.assign(
+        'https://me-quote-poster.auth.us-east-2.amazoncognito.com/login?client_id=70snluik5pf9jenb07lumlbtd9&response_type=token&scope=aws.cognito.signin.user.admin+email+openid+profile+phone&redirect_uri=https://dkmullen.com/poster/'
+      );
     },
   },
 };
