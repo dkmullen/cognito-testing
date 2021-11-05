@@ -82,10 +82,9 @@ function signIn({ username, password }) {
   cognitoUser.authenticateUser(authenticationDetails, {
     onSuccess: function (result) {
       const accessToken = result.getAccessToken().getJwtToken();
-      console.log(cognitoUser.username);
       eventBus.$emit('signedIn', {
-        username: cognitoUser.username,
         token: accessToken,
+        cognitoUser,
       });
     },
     onFailure: function (err) {
@@ -95,14 +94,14 @@ function signIn({ username, password }) {
       cognitoUser.associateSoftwareToken(this);
     },
     associateSecretCode: function (secretCode) {
-      console.log(secretCode);
       var challengeAnswer = prompt('Please input the TOTP code.', '');
       cognitoUser.verifySoftwareToken(challengeAnswer, 'My TOTP device', this);
     },
     totpRequired: function (secretCode) {
-      console.log(secretCode);
-
-      var challengeAnswer = prompt('Please input the TOTP code.', '');
+      var challengeAnswer = prompt(
+        'Please input the TOTP code from your authentication app.',
+        ''
+      );
       cognitoUser.sendMFACode(challengeAnswer, this, 'SOFTWARE_TOKEN_MFA');
     },
   });

@@ -108,18 +108,21 @@
     </v-form>
     <div v-if="message" class="message center">{{ message }}</div>
     <div v-if="error" class="error center">{{ error }}</div>
+    <div>{{ authenticatedUser }}</div>
   </v-container>
 </template>
 
 <script>
 import * as auth from '../services/authservice';
 import axios from 'axios';
+import { mapActions, mapGetters } from 'vuex';
 
 export default {
   name: 'HelloWorld',
   mounted() {
     this.checkForAuthenticatedUser();
   },
+  computed: mapGetters(['authenticatedUser']),
   data: () => ({
     valid: true,
     signInIsValid: false,
@@ -174,6 +177,7 @@ export default {
     },
   }),
   methods: {
+    ...mapActions(['setAuthenticatedUser']),
     signUp() {
       let user = {};
       for (let i in this.formData) {
@@ -194,9 +198,11 @@ export default {
     signIn() {
       auth.signIn(this.user);
       auth.eventBus.$on('signedIn', (res) => {
-        this.currentUser = res.username;
+        console.log(res);
+        this.currentUser = res.cognitoUser.username;
         this.token = res.token;
         this.signedIn = true;
+        this.setAuthenticatedUser(res.cognitoUser);
         this.switchForms('postForm');
       });
     },
@@ -205,6 +211,7 @@ export default {
       if (res) {
         this.signedIn = false;
         this.currentUser = '';
+        this.setAuthenticatedUser = null;
         this.switchForms('signInForm');
       }
     },
@@ -280,7 +287,7 @@ export default {
   margin-bottom: 2rem;
 }
 .message {
-  color: green;
+  color: #0c5b5b;
 }
 .error {
   color: red;
