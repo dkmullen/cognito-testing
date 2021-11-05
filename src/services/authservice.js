@@ -118,6 +118,7 @@ async function signOut() {
 }
 
 async function getAuthenticatedUser() {
+  console.log(userPool, userPool.getCurrentUser());
   return userPool.getCurrentUser();
 }
 

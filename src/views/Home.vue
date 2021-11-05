@@ -119,11 +119,23 @@
 import * as auth from '../services/authservice';
 import axios from 'axios';
 import { mapActions, mapGetters } from 'vuex';
+import jwt_decode from 'jwt-decode';
 
 export default {
   name: 'HelloWorld',
   mounted() {
     this.checkForAuthenticatedUser();
+    const id_token = new URLSearchParams(window.location.hash.substr(1)).get(
+      'id_token'
+    );
+    if (id_token) {
+      console.log(id_token);
+      this.setIdToken(id_token);
+      const decodedToken = jwt_decode(id_token);
+      this.currentUser = decodedToken['email'];
+      this.signedIn = true;
+      this.switchForms('postForm');
+    }
   },
   computed: mapGetters(['authenticatedUser', 'idToken']),
   data: () => ({
