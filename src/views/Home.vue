@@ -46,7 +46,12 @@
         </div>
       </v-container>
     </v-form>
-    <v-form class="form" v-if="forms.signInForm" v-model="signInIsValid">
+    <v-form
+      class="form"
+      v-if="forms.signInForm"
+      v-model="signInIsValid"
+      ref="signInForm"
+    >
       <h2 class="center">Sign in</h2>
       <v-container>
         <BaseInput
@@ -122,14 +127,13 @@ import { mapActions, mapGetters } from 'vuex';
 import jwt_decode from 'jwt-decode';
 
 export default {
-  name: 'HelloWorld',
+  name: 'QuotePoster',
   mounted() {
     this.checkForAuthenticatedUser();
     const id_token = new URLSearchParams(window.location.hash.substr(1)).get(
       'id_token'
     );
     if (id_token) {
-      console.log(id_token);
       this.setIdToken(id_token);
       const decodedToken = jwt_decode(id_token);
       this.currentUser = decodedToken['email'];
@@ -148,7 +152,6 @@ export default {
     error: '',
     signedIn: false,
     currentUser: '',
-    token: '',
     forms: {
       confirmForm: false,
       signUpForm: false,
@@ -213,18 +216,11 @@ export default {
     signIn() {
       auth.signIn(this.user);
       auth.eventBus.$on('signedIn', (res) => {
-        console.log(res);
         this.currentUser = res.cognitoUser.username;
-        this.token = res.token;
+        this.setIdToken(res.token);
         this.signedIn = true;
         this.setAuthenticatedUser(res.cognitoUser);
-        const id_token = new URLSearchParams(
-          window.location.hash.substr(1)
-        ).get('id_token');
-        if (id_token) {
-          console.log(id_token);
-          this.setIdToken(id_token);
-        }
+        this.$refs.signInForm.reset();
         this.switchForms('postForm');
       });
     },
@@ -234,6 +230,7 @@ export default {
         this.signedIn = false;
         this.currentUser = '';
         this.setAuthenticatedUser(null);
+        this.setIdToken('');
         this.switchForms('signInForm');
       }
     },
@@ -248,12 +245,6 @@ export default {
         source: this.post.source,
         quote: this.post.quote,
       };
-      auth.getAuthenticatedUser((err, user) => {
-        if (err) {
-          console.log(err);
-        }
-        console.log(user);
-      });
       this.submitting = true;
       let res = await axios
         .post(

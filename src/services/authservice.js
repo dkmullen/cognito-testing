@@ -37,11 +37,9 @@ function signUp({ username, email, password }) {
     function (err, result) {
       if (err) {
         eventBus.$emit('signUpError', err);
-        console.log('oops', err);
         return;
       }
       cognitoUser = result.user;
-      console.log('success', result);
       eventBus.$emit('signUpSuccess', cognitoUser.getUsername());
     }
   );
@@ -60,7 +58,7 @@ function confirm(username, number) {
       alert(err.message || JSON.stringify(err));
       return;
     }
-    console.log('call result: ' + result);
+    console.log(result);
     eventBus.$emit('confirmSuccess');
   });
 }
@@ -81,12 +79,16 @@ function signIn({ username, password }) {
 
   cognitoUser.authenticateUser(authenticationDetails, {
     onSuccess: function (result) {
-      console.log(result);
-      const accessToken = result.getIdToken().getJwtToken();
-      console.log(accessToken);
+      const idToken = result.getIdToken().getJwtToken();
       eventBus.$emit('signedIn', {
-        token: accessToken,
+        token: idToken,
         cognitoUser,
+      });
+      cognitoUser.getUserData(function (err, userData) {
+        if (err) {
+          alert(err.message || JSON.stringify(err));
+          return;
+        }
       });
     },
     onFailure: function (err) {
@@ -96,8 +98,15 @@ function signIn({ username, password }) {
       cognitoUser.associateSoftwareToken(this);
     },
     associateSecretCode: function (secretCode) {
-      var challengeAnswer = prompt('Please input the TOTP code.', '');
-      cognitoUser.verifySoftwareToken(challengeAnswer, 'My TOTP device', this);
+      console.log('qr code', secretCode);
+      setTimeout(() => {
+        var challengeAnswer = prompt('Please input the TOTP code.', '');
+        cognitoUser.verifySoftwareToken(
+          challengeAnswer,
+          'My TOTP device',
+          this
+        );
+      }, 1000);
     },
     totpRequired: function (secretCode) {
       var challengeAnswer = prompt(
@@ -118,7 +127,6 @@ async function signOut() {
 }
 
 async function getAuthenticatedUser() {
-  console.log(userPool, userPool.getCurrentUser());
   return userPool.getCurrentUser();
 }
 
