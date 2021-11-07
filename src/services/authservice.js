@@ -1,6 +1,8 @@
 /* eslint-disable no-unused-vars */
 import ENV from '../../.env.js';
 import Vue from 'vue';
+import axios from 'axios';
+
 export const eventBus = new Vue();
 
 import {
@@ -58,7 +60,6 @@ function confirm(username, number) {
       alert(err.message || JSON.stringify(err));
       return;
     }
-    console.log(result);
     eventBus.$emit('confirmSuccess');
   });
 }
@@ -130,4 +131,27 @@ async function getAuthenticatedUser() {
   return userPool.getCurrentUser();
 }
 
-export { signUp, confirm, signIn, signOut, getAuthenticatedUser };
+async function getTokens(code) {
+  const params = {
+    grant_type: 'authorization_code',
+    code,
+    client_id: ENV.ClientId,
+    redirect_uri: ENV.RedirectUri,
+  };
+
+  const data = Object.keys(params)
+    .map((key) => `${key}=${encodeURIComponent(params[key])}`)
+    .join('&');
+
+  const options = {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    data,
+    url: `${ENV.AppUrl}/oauth2/token`,
+  };
+
+  const response = await axios(options);
+  eventBus.$emit('tokensFromSocialSignin', response.data.id_token);
+}
+
+export { signUp, confirm, signIn, signOut, getAuthenticatedUser, getTokens };

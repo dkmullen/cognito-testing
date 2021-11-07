@@ -130,15 +130,20 @@ export default {
   name: 'QuotePoster',
   mounted() {
     this.checkForAuthenticatedUser();
-    const id_token = new URLSearchParams(window.location.hash.substr(1)).get(
-      'id_token'
+
+    // This is a separate auth process for social sign-in (doesn't use signIn())
+    const code = new URLSearchParams(window.location.search.substring(1)).get(
+      'code'
     );
-    if (id_token) {
-      this.setIdToken(id_token);
-      const decodedToken = jwt_decode(id_token);
-      this.currentUser = decodedToken['email'];
-      this.signedIn = true;
-      this.switchForms('postForm');
+    if (code) {
+      auth.getTokens(code);
+      auth.eventBus.$on('tokensFromSocialSignin', (id_token) => {
+        this.setIdToken(id_token);
+        const decodedToken = jwt_decode(id_token);
+        this.currentUser = decodedToken['email'];
+        this.signedIn = true;
+        this.switchForms('postForm');
+      });
     }
   },
   computed: mapGetters(['authenticatedUser', 'idToken']),
@@ -279,7 +284,7 @@ export default {
     },
     googleIn() {
       window.location.assign(
-        'https://me-quote-poster.auth.us-east-2.amazoncognito.com/login?client_id=70snluik5pf9jenb07lumlbtd9&response_type=token&scope=aws.cognito.signin.user.admin+email+openid+profile+phone&redirect_uri=https://dkmullen.com/poster/'
+        'https://me-quote-poster.auth.us-east-2.amazoncognito.com/login?client_id=70snluik5pf9jenb07lumlbtd9&response_type=code&scope=aws.cognito.signin.user.admin+email+openid+profile+phone&redirect_uri=https://dkmullen.com/poster/'
       );
     },
   },
